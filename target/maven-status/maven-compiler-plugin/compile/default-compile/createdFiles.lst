@@ -1,0 +1,13 @@
+com\medifind\backend\security\JwtService.class
+com\medifind\backend\service\AuthService.class
+com\medifind\backend\dto\request\LoginRequest.class
+com\medifind\backend\MedifindBackendApplication.class
+com\medifind\backend\enums\Role.class
+com\medifind\backend\controller\AuthController.class
+com\medifind\backend\security\SecurityConfig.class
+com\medifind\backend\entity\User.class
+com\medifind\backend\dto\response\RegisterResponse.class
+com\medifind\backend\dto\response\LoginResponse.class
+com\medifind\backend\repository\UserRepository.class
+com\medifind\backend\dto\request\RegisterRequest.class
+com\medifind\backend\config\PasswordConfig.class

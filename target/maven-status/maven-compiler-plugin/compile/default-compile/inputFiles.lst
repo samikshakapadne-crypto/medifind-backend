@@ -1,0 +1,13 @@
+C:\Users\acer\OneDrive\Documents\MediFind\Backend\medifind-backend\src\main\java\com\medifind\backend\config\PasswordConfig.java
+C:\Users\acer\OneDrive\Documents\MediFind\Backend\medifind-backend\src\main\java\com\medifind\backend\controller\AuthController.java
+C:\Users\acer\OneDrive\Documents\MediFind\Backend\medifind-backend\src\main\java\com\medifind\backend\dto\request\LoginRequest.java
+C:\Users\acer\OneDrive\Documents\MediFind\Backend\medifind-backend\src\main\java\com\medifind\backend\dto\request\RegisterRequest.java
+C:\Users\acer\OneDrive\Documents\MediFind\Backend\medifind-backend\src\main\java\com\medifind\backend\dto\response\LoginResponse.java
+C:\Users\acer\OneDrive\Documents\MediFind\Backend\medifind-backend\src\main\java\com\medifind\backend\dto\response\RegisterResponse.java
+C:\Users\acer\OneDrive\Documents\MediFind\Backend\medifind-backend\src\main\java\com\medifind\backend\entity\User.java
+C:\Users\acer\OneDrive\Documents\MediFind\Backend\medifind-backend\src\main\java\com\medifind\backend\enums\Role.java
+C:\Users\acer\OneDrive\Documents\MediFind\Backend\medifind-backend\src\main\java\com\medifind\backend\MedifindBackendApplication.java
+C:\Users\acer\OneDrive\Documents\MediFind\Backend\medifind-backend\src\main\java\com\medifind\backend\repository\UserRepository.java
+C:\Users\acer\OneDrive\Documents\MediFind\Backend\medifind-backend\src\main\java\com\medifind\backend\security\JwtService.java
+C:\Users\acer\OneDrive\Documents\MediFind\Backend\medifind-backend\src\main\java\com\medifind\backend\security\SecurityConfig.java
+C:\Users\acer\OneDrive\Documents\MediFind\Backend\medifind-backend\src\main\java\com\medifind\backend\service\AuthService.java
