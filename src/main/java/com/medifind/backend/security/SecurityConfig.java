@@ -7,6 +7,11 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+
+import java.util.List;
 
 @Configuration
 public class SecurityConfig {
@@ -27,6 +32,8 @@ public class SecurityConfig {
         http
                 .csrf(csrf -> csrf.disable())
 
+                .cors(cors -> {})
+
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(
                                 SessionCreationPolicy.STATELESS
@@ -34,6 +41,10 @@ public class SecurityConfig {
                 )
 
                 .authorizeHttpRequests(auth -> auth
+
+                        // Allow browser CORS preflight requests
+                        .requestMatchers(HttpMethod.OPTIONS, "/**")
+                        .permitAll()
 
                         .requestMatchers("/api/auth/**")
                         .permitAll()
@@ -47,6 +58,12 @@ public class SecurityConfig {
                         .requestMatchers(
                                 HttpMethod.GET,
                                 "/api/medicines/**"
+                        )
+                        .permitAll()
+
+                        .requestMatchers(
+                                HttpMethod.GET,
+                                "/api/inventory/search"
                         )
                         .permitAll()
 
@@ -73,33 +90,33 @@ public class SecurityConfig {
 
                         .requestMatchers(
                                 HttpMethod.GET,
-                                "/api/inventory/search"
-                        ).permitAll()
-
-                        .requestMatchers(
-                                HttpMethod.GET,
                                 "/api/inventory/pharmacy/**"
-                        ).authenticated()
+                        )
+                        .authenticated()
 
                         .requestMatchers(
                                 HttpMethod.POST,
                                 "/api/inventory"
-                        ).authenticated()
+                        )
+                        .authenticated()
 
                         .requestMatchers(
                                 HttpMethod.PUT,
                                 "/api/inventory/**"
-                        ).authenticated()
+                        )
+                        .authenticated()
 
                         .requestMatchers(
                                 HttpMethod.POST,
                                 "/api/rare-medicine"
-                        ).authenticated()
+                        )
+                        .authenticated()
 
                         .requestMatchers(
                                 HttpMethod.GET,
                                 "/api/rare-medicine/my-requests"
-                        ).authenticated()
+                        )
+                        .authenticated()
 
                         .requestMatchers("/api/rare-medicine/pending")
                         .hasRole("ADMIN")
@@ -107,7 +124,8 @@ public class SecurityConfig {
                         .requestMatchers(
                                 "/api/rare-medicine/*/approve",
                                 "/api/rare-medicine/*/reject"
-                        ).hasRole("ADMIN")
+                        )
+                        .hasRole("ADMIN")
 
                         .anyRequest()
                         .authenticated()
@@ -122,5 +140,48 @@ public class SecurityConfig {
                 );
 
         return http.build();
+    }
+
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+
+        CorsConfiguration configuration = new CorsConfiguration();
+
+        // Allow frontend from any domain
+        configuration.setAllowedOriginPatterns(
+                List.of("*")
+        );
+
+        configuration.setAllowedMethods(
+                List.of(
+                        "GET",
+                        "POST",
+                        "PUT",
+                        "DELETE",
+                        "PATCH",
+                        "OPTIONS"
+                )
+        );
+
+        configuration.setAllowedHeaders(
+                List.of("*")
+        );
+
+        configuration.setExposedHeaders(
+                List.of("Authorization")
+        );
+
+        // JWT is sent in Authorization header, not cookies
+        configuration.setAllowCredentials(false);
+
+        UrlBasedCorsConfigurationSource source =
+                new UrlBasedCorsConfigurationSource();
+
+        source.registerCorsConfiguration(
+                "/**",
+                configuration
+        );
+
+        return source;
     }
 }
