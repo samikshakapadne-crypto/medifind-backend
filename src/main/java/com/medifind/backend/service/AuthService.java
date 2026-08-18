@@ -59,6 +59,38 @@ public class AuthService {
         );
     }
 
+    public RegisterResponse registerAdmin(RegisterRequest request) {
+
+        String normalizedEmail = request.getEmail()
+                .toLowerCase()
+                .trim();
+
+        if (userRepository.existsByEmail(normalizedEmail)) {
+            throw new IllegalArgumentException("Email is already registered");
+        }
+
+        if (userRepository.existsByPhone(request.getPhone())) {
+            throw new IllegalArgumentException("Phone number is already registered");
+        }
+
+        User user = new User();
+        user.setFullName(request.getFullName().trim());
+        user.setEmail(normalizedEmail);
+        user.setPhone(request.getPhone());
+        user.setPassword(passwordEncoder.encode(request.getPassword()));
+
+        // Main difference
+        user.setRole(Role.ADMIN);
+
+        User savedUser = userRepository.save(user);
+
+        return new RegisterResponse(
+                savedUser.getId(),
+                savedUser.getFullName(),
+                savedUser.getEmail(),
+                "Admin registered successfully"
+        );
+    }
     public LoginResponse login(LoginRequest request) {
 
         String normalizedEmail = request.getEmail()

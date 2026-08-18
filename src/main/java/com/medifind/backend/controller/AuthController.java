@@ -24,7 +24,20 @@ public class AuthController {
     public ResponseEntity<RegisterResponse> registerCustomer(
             @Valid @RequestBody RegisterRequest request
     ) {
-        RegisterResponse response = authService.registerCustomer(request);
+        RegisterResponse response =
+                authService.registerCustomer(request);
+
+        return ResponseEntity
+                .status(HttpStatus.CREATED)
+                .body(response);
+    }
+
+    @PostMapping("/register-admin")
+    public ResponseEntity<RegisterResponse> registerAdmin(
+            @Valid @RequestBody RegisterRequest request
+    ) {
+        RegisterResponse response =
+                authService.registerAdmin(request);
 
         return ResponseEntity
                 .status(HttpStatus.CREATED)
@@ -35,6 +48,8 @@ public class AuthController {
     public ResponseEntity<LoginResponse> login(
             @Valid @RequestBody LoginRequest request
     ) {
-        return ResponseEntity.ok(authService.login(request));
+        return ResponseEntity.ok(
+                authService.login(request)
+        );
     }
 }
