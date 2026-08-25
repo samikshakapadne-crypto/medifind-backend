@@ -93,11 +93,15 @@ public class OrderService {
         }
 
         Order order = new Order();
+
         order.setOrderNumber(generateOrderNumber());
         order.setCustomer(customer);
         order.setPharmacy(cart.getPharmacy());
         order.setTotalAmount(totalAmount);
-        order.setOrderStatus(OrderStatus.PLACED);
+
+        // Automatically confirm order after successful placement
+        order.setOrderStatus(OrderStatus.CONFIRMED);
+
         order.setPaymentMethod(PaymentMethod.CASH_ON_DELIVERY);
         order.setDeliveryAddress(request.getDeliveryAddress().trim());
         order.setPlacedAt(LocalDateTime.now());
@@ -114,43 +118,69 @@ public class OrderService {
                     );
 
             OrderItem orderItem = new OrderItem();
+
             orderItem.setOrder(savedOrder);
             orderItem.setInventory(inventory);
+
             orderItem.setMedicineName(
                     inventory.getMedicine().getMedicineName()
             );
-            orderItem.setQuantity(cartItem.getQuantity());
-            orderItem.setUnitPrice(inventory.getSellingPrice());
+
+            orderItem.setQuantity(
+                    cartItem.getQuantity()
+            );
+
+            orderItem.setUnitPrice(
+                    inventory.getSellingPrice()
+            );
+
             orderItem.setSubtotal(subtotal);
 
             orderItemRepository.save(orderItem);
 
+            // Reduce inventory after order
             inventory.setQuantity(
-                    inventory.getQuantity() - cartItem.getQuantity()
+                    inventory.getQuantity()
+                            - cartItem.getQuantity()
             );
 
             inventoryRepository.save(inventory);
         }
 
+        // Clear cart after successful order
         cartItemRepository.deleteByCartId(cart.getId());
         cartRepository.delete(cart);
 
         return mapToResponse(savedOrder);
     }
 
-    public List<OrderResponse> getMyOrders(String customerEmail) {
+    // ===============================
+    // CUSTOMER - GET MY ORDERS
+    // ===============================
+
+    public List<OrderResponse> getMyOrders(
+            String customerEmail
+    ) {
 
         User customer = userRepository.findByEmail(customerEmail)
                 .orElseThrow(() ->
-                        new IllegalArgumentException("Customer not found")
+                        new IllegalArgumentException(
+                                "Customer not found"
+                        )
                 );
 
         return orderRepository
-                .findByCustomerIdOrderByPlacedAtDesc(customer.getId())
+                .findByCustomerIdOrderByPlacedAtDesc(
+                        customer.getId()
+                )
                 .stream()
                 .map(this::mapToResponse)
                 .toList();
     }
+
+    // ===============================
+    // CUSTOMER - GET ONE ORDER
+    // ===============================
 
     public OrderResponse getOrderById(
             String customerEmail,
@@ -159,15 +189,22 @@ public class OrderService {
 
         User customer = userRepository.findByEmail(customerEmail)
                 .orElseThrow(() ->
-                        new IllegalArgumentException("Customer not found")
+                        new IllegalArgumentException(
+                                "Customer not found"
+                        )
                 );
 
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() ->
-                        new IllegalArgumentException("Order not found")
+                        new IllegalArgumentException(
+                                "Order not found"
+                        )
                 );
 
-        if (!order.getCustomer().getId().equals(customer.getId())) {
+        if (!order.getCustomer()
+                .getId()
+                .equals(customer.getId())) {
+
             throw new IllegalArgumentException(
                     "This order does not belong to the customer"
             );
@@ -175,6 +212,40 @@ public class OrderService {
 
         return mapToResponse(order);
     }
+
+    // ===============================
+    // ADMIN - VIEW ALL ORDERS
+    // ===============================
+
+    public List<OrderResponse> getAllOrders() {
+
+        return orderRepository.findAll()
+                .stream()
+                .map(this::mapToResponse)
+                .toList();
+    }
+
+    // ===============================
+    // ADMIN - VIEW ONE ORDER
+    // ===============================
+
+    public OrderResponse getAdminOrderById(
+            Long orderId
+    ) {
+
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() ->
+                        new IllegalArgumentException(
+                                "Order not found"
+                        )
+                );
+
+        return mapToResponse(order);
+    }
+
+    // ===============================
+    // GENERATE ORDER NUMBER
+    // ===============================
 
     private String generateOrderNumber() {
 
@@ -185,19 +256,28 @@ public class OrderService {
                         .toUpperCase();
     }
 
-    private OrderResponse mapToResponse(Order order) {
+    // ===============================
+    // MAP ENTITY TO RESPONSE
+    // ===============================
+
+    private OrderResponse mapToResponse(
+            Order order
+    ) {
 
         List<OrderItemResponse> items =
-                orderItemRepository.findByOrderId(order.getId())
+                orderItemRepository
+                        .findByOrderId(order.getId())
                         .stream()
-                        .map(item -> new OrderItemResponse(
-                                item.getId(),
-                                item.getInventory().getId(),
-                                item.getMedicineName(),
-                                item.getQuantity(),
-                                item.getUnitPrice(),
-                                item.getSubtotal()
-                        ))
+                        .map(item ->
+                                new OrderItemResponse(
+                                        item.getId(),
+                                        item.getInventory().getId(),
+                                        item.getMedicineName(),
+                                        item.getQuantity(),
+                                        item.getUnitPrice(),
+                                        item.getSubtotal()
+                                )
+                        )
                         .toList();
 
         return new OrderResponse(

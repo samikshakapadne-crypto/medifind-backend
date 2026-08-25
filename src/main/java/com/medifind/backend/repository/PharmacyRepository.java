@@ -5,6 +5,7 @@ import com.medifind.backend.enums.PharmacyApprovalStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface PharmacyRepository
         extends JpaRepository<Pharmacy, Long> {
@@ -12,4 +13,7 @@ public interface PharmacyRepository
     List<Pharmacy> findByApprovalStatus(
             PharmacyApprovalStatus approvalStatus
     );
+
+    // Find pharmacy using the linked User ID
+    Optional<Pharmacy> findByUserId(Long userId);
 }

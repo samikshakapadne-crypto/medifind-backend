@@ -7,6 +7,7 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -30,10 +31,13 @@ public class SecurityConfig {
     ) throws Exception {
 
         http
+                // Disable CSRF because JWT authentication is stateless
                 .csrf(csrf -> csrf.disable())
 
+                // Enable CORS
                 .cors(cors -> {})
 
+                // No HTTP session
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(
                                 SessionCreationPolicy.STATELESS
@@ -42,12 +46,59 @@ public class SecurityConfig {
 
                 .authorizeHttpRequests(auth -> auth
 
-                        // Allow browser CORS preflight requests
-                        .requestMatchers(HttpMethod.OPTIONS, "/**")
+                        // ==========================================
+                        // CORS PREFLIGHT
+                        // ==========================================
+
+                        .requestMatchers(
+                                HttpMethod.OPTIONS,
+                                "/**"
+                        )
                         .permitAll()
 
-                        .requestMatchers("/api/auth/**")
+
+                        // ==========================================
+                        // AUTHENTICATION - PUBLIC
+                        // ==========================================
+
+                        .requestMatchers(
+                                HttpMethod.POST,
+                                "/api/auth/register"
+                        )
                         .permitAll()
+
+                        .requestMatchers(
+                                HttpMethod.POST,
+                                "/api/auth/login"
+                        )
+                        .permitAll()
+
+
+                        // IMPORTANT:
+                        // Don't leave admin registration public.
+                        // Existing ADMIN can create another admin
+                        // if you still keep this endpoint.
+                        .requestMatchers(
+                                HttpMethod.POST,
+                                "/api/auth/register-admin"
+                        )
+                        .hasRole("ADMIN")
+
+
+                        // ==========================================
+                        // PHARMACY REGISTRATION - PUBLIC
+                        // ==========================================
+
+                        .requestMatchers(
+                                HttpMethod.POST,
+                                "/api/pharmacies"
+                        )
+                        .permitAll()
+
+
+                        // ==========================================
+                        // PUBLIC PHARMACY VIEW
+                        // ==========================================
 
                         .requestMatchers(
                                 HttpMethod.GET,
@@ -55,11 +106,44 @@ public class SecurityConfig {
                         )
                         .permitAll()
 
+
+                        // ==========================================
+                        // PUBLIC MEDICINE CATALOG
+                        // ==========================================
+
                         .requestMatchers(
                                 HttpMethod.GET,
                                 "/api/medicines/**"
                         )
                         .permitAll()
+
+
+                        // ==========================================
+                        // MEDICINE MANAGEMENT - ADMIN
+                        // ==========================================
+
+                        .requestMatchers(
+                                HttpMethod.POST,
+                                "/api/medicines"
+                        )
+                        .hasRole("ADMIN")
+
+                        .requestMatchers(
+                                HttpMethod.PUT,
+                                "/api/medicines/**"
+                        )
+                        .hasRole("ADMIN")
+
+                        .requestMatchers(
+                                HttpMethod.DELETE,
+                                "/api/medicines/**"
+                        )
+                        .hasRole("ADMIN")
+
+
+                        // ==========================================
+                        // PUBLIC STOCK SEARCH
+                        // ==========================================
 
                         .requestMatchers(
                                 HttpMethod.GET,
@@ -67,72 +151,141 @@ public class SecurityConfig {
                         )
                         .permitAll()
 
-                        .requestMatchers("/api/admin/**")
-                        .hasRole("ADMIN")
-
                         .requestMatchers(
-                                HttpMethod.POST,
-                                "/api/medicines"
+                                HttpMethod.GET,
+                                "/api/inventory/customer-search"
                         )
-                        .authenticated()
+                        .permitAll()
 
-                        .requestMatchers(
-                                HttpMethod.PUT,
-                                "/api/medicines/**"
-                        )
-                        .authenticated()
 
-                        .requestMatchers(
-                                HttpMethod.DELETE,
-                                "/api/medicines/**"
-                        )
-                        .authenticated()
+                        // ==========================================
+                        // PHARMACY INVENTORY
+                        // ==========================================
 
+                        // Pharmacy and Admin can view inventory
                         .requestMatchers(
                                 HttpMethod.GET,
                                 "/api/inventory/pharmacy/**"
                         )
-                        .authenticated()
+                        .hasAnyRole(
+                                "PHARMACY",
+                                "ADMIN"
+                        )
 
+                        // Only pharmacy manages stock
                         .requestMatchers(
                                 HttpMethod.POST,
                                 "/api/inventory"
                         )
-                        .authenticated()
+                        .hasRole("PHARMACY")
 
                         .requestMatchers(
                                 HttpMethod.PUT,
                                 "/api/inventory/**"
                         )
-                        .authenticated()
+                        .hasRole("PHARMACY")
+
+
+                        // ==========================================
+                        // CUSTOMER CART
+                        // ==========================================
+
+                        .requestMatchers(
+                                "/api/cart/**"
+                        )
+                        .hasRole("CUSTOMER")
+
+
+                        // ==========================================
+                        // CUSTOMER ORDERS
+                        // ==========================================
+
+                        .requestMatchers(
+                                "/api/orders/**"
+                        )
+                        .hasRole("CUSTOMER")
+
+
+                        // ==========================================
+                        // ADMIN APIs
+                        // ==========================================
+
+                        // Includes:
+                        // /api/admin/customers
+                        // /api/admin/customers/count
+                        // /api/admin/pharmacies/...
+                        // /api/admin/orders
+                        // /api/admin/orders/{id}
+
+                        .requestMatchers(
+                                "/api/admin/**"
+                        )
+                        .hasRole("ADMIN")
+
+
+                        // ==========================================
+                        // RARE MEDICINE - ADMIN
+                        // ==========================================
+
+                        .requestMatchers(
+                                HttpMethod.GET,
+                                "/api/rare-medicine/pending"
+                        )
+                        .hasRole("ADMIN")
+
+                        .requestMatchers(
+                                HttpMethod.PUT,
+                                "/api/rare-medicine/*/approve"
+                        )
+                        .hasRole("ADMIN")
+
+                        .requestMatchers(
+                                HttpMethod.PUT,
+                                "/api/rare-medicine/*/reject"
+                        )
+                        .hasRole("ADMIN")
+
+
+                        // Admin can view a particular request
+                        .requestMatchers(
+                                HttpMethod.GET,
+                                "/api/rare-medicine/*"
+                        )
+                        .hasRole("ADMIN")
+
+
+                        // ==========================================
+                        // RARE MEDICINE - CUSTOMER
+                        // ==========================================
 
                         .requestMatchers(
                                 HttpMethod.POST,
                                 "/api/rare-medicine"
                         )
-                        .authenticated()
+                        .hasRole("CUSTOMER")
 
                         .requestMatchers(
                                 HttpMethod.GET,
                                 "/api/rare-medicine/my-requests"
                         )
-                        .authenticated()
+                        .hasRole("CUSTOMER")
 
-                        .requestMatchers("/api/rare-medicine/pending")
-                        .hasRole("ADMIN")
 
-                        .requestMatchers(
-                                "/api/rare-medicine/*/approve",
-                                "/api/rare-medicine/*/reject"
-                        )
-                        .hasRole("ADMIN")
+                        // ==========================================
+                        // EVERYTHING ELSE
+                        // ==========================================
 
                         .anyRequest()
                         .authenticated()
                 )
 
-                .formLogin(form -> form.disable())
-                .httpBasic(basic -> basic.disable())
+                .formLogin(form ->
+                        form.disable()
+                )
+
+                .httpBasic(basic ->
+                        basic.disable()
+                )
 
                 .addFilterBefore(
                         jwtAuthenticationFilter,
@@ -142,12 +295,20 @@ public class SecurityConfig {
         return http.build();
     }
 
+
+    // ==========================================================
+    // CORS CONFIGURATION
+    // ==========================================================
+
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
 
-        CorsConfiguration configuration = new CorsConfiguration();
+        CorsConfiguration configuration =
+                new CorsConfiguration();
 
-        // Allow frontend from any domain
+        // Allows your frontend developer to access
+        // the Railway backend from localhost,
+        // Netlify, Vercel, etc.
         configuration.setAllowedOriginPatterns(
                 List.of("*")
         );
@@ -171,7 +332,8 @@ public class SecurityConfig {
                 List.of("Authorization")
         );
 
-        // JWT is sent in Authorization header, not cookies
+        // We use JWT Authorization header,
+        // not browser session cookies
         configuration.setAllowCredentials(false);
 
         UrlBasedCorsConfigurationSource source =
