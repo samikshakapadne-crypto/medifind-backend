@@ -23,9 +23,16 @@ public class MedicineRequest {
     @Size(max = 150)
     private String manufacturer;
 
+    // Main category
+    // Example: Infections, Cardiovascular, Dermatology
     @NotBlank(message = "Category is required")
     @Size(max = 100)
     private String category;
+
+    // Subcategory
+    // Example: Antibiotic, Antihypertensive, Antifungal
+    @Size(max = 100)
+    private String subcategory;
 
     @Size(max = 50)
     private String strength;

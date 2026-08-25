@@ -12,7 +12,10 @@ public class MedicineResponse {
     private String genericName;
     private String brandName;
     private String manufacturer;
+
     private String category;
+    private String subcategory;
+
     private String strength;
     private String dosageForm;
     private String composition;

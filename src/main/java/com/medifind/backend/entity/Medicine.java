@@ -28,8 +28,15 @@ public class Medicine {
     @Column(nullable = false, length = 150)
     private String manufacturer;
 
+    // Main category
+    // Example: Cardiovascular, Infections, Dermatology
     @Column(nullable = false, length = 100)
     private String category;
+
+    // Subcategory
+    // Example: Antihypertensive, Antibiotic, Antifungal
+    @Column(length = 100)
+    private String subcategory;
 
     @Column(length = 50)
     private String strength;

@@ -4,6 +4,10 @@ import com.medifind.backend.dto.request.MedicineRequest;
 import com.medifind.backend.dto.response.MedicineResponse;
 import com.medifind.backend.entity.Medicine;
 import com.medifind.backend.repository.MedicineRepository;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -17,50 +21,229 @@ public class MedicineService {
         this.medicineRepository = medicineRepository;
     }
 
-    public MedicineResponse createMedicine(MedicineRequest request) {
+    // ============================
+    // CREATE MEDICINE
+    // ============================
+
+    public MedicineResponse createMedicine(
+            MedicineRequest request
+    ) {
 
         Medicine medicine = new Medicine();
 
-        medicine.setMedicineName(request.getMedicineName().trim());
-        medicine.setGenericName(request.getGenericName());
-        medicine.setBrandName(request.getBrandName());
-        medicine.setManufacturer(request.getManufacturer().trim());
-        medicine.setCategory(request.getCategory().trim());
-        medicine.setStrength(request.getStrength());
-        medicine.setDosageForm(request.getDosageForm().trim());
-        medicine.setComposition(request.getComposition());
-        medicine.setDescription(request.getDescription());
-        medicine.setPrescriptionRequired(request.isPrescriptionRequired());
-        medicine.setRareMedicine(request.isRareMedicine());
-        medicine.setImageUrl(request.getImageUrl());
+        medicine.setMedicineName(
+                request.getMedicineName().trim()
+        );
+
+        medicine.setGenericName(
+                request.getGenericName()
+        );
+
+        medicine.setBrandName(
+                request.getBrandName()
+        );
+
+        medicine.setManufacturer(
+                request.getManufacturer().trim()
+        );
+
+        medicine.setCategory(
+                request.getCategory().trim()
+        );
+
+        // NEW
+        medicine.setSubcategory(
+                request.getSubcategory()
+        );
+
+        medicine.setStrength(
+                request.getStrength()
+        );
+
+        medicine.setDosageForm(
+                request.getDosageForm().trim()
+        );
+
+        medicine.setComposition(
+                request.getComposition()
+        );
+
+        medicine.setDescription(
+                request.getDescription()
+        );
+
+        medicine.setPrescriptionRequired(
+                request.isPrescriptionRequired()
+        );
+
+        medicine.setRareMedicine(
+                request.isRareMedicine()
+        );
+
+        medicine.setImageUrl(
+                request.getImageUrl()
+        );
+
         medicine.setActive(true);
 
-        return mapToResponse(medicineRepository.save(medicine));
+        return mapToResponse(
+                medicineRepository.save(medicine)
+        );
     }
+
+
+    // ============================
+    // GET ALL MEDICINES
+    // ============================
 
     public List<MedicineResponse> getAllMedicines() {
 
-        return medicineRepository.findByActiveTrue()
+        return medicineRepository
+                .findByActiveTrue()
                 .stream()
                 .map(this::mapToResponse)
                 .toList();
     }
 
-    public MedicineResponse getMedicineById(Long id) {
 
-        Medicine medicine = medicineRepository.findById(id)
-                .orElseThrow(() ->
-                        new IllegalArgumentException("Medicine not found")
+    // ============================
+    // PAGINATION + CATEGORY + SEARCH
+    // ============================
+
+    public Page<MedicineResponse> getMedicines(
+            int page,
+            int size,
+            String category,
+            String search
+    ) {
+
+        Pageable pageable =
+                PageRequest.of(page, size);
+
+        boolean hasCategory =
+                category != null
+                        && !category.isBlank()
+                        && !category.equalsIgnoreCase("ALL");
+
+        boolean hasSearch =
+                search != null
+                        && !search.isBlank();
+
+        Page<Medicine> medicinePage;
+
+        // Category + Search
+        if (hasCategory && hasSearch) {
+
+            medicinePage =
+                    medicineRepository
+                            .searchActiveMedicinesByCategory(
+                                    search.trim(),
+                                    category.trim(),
+                                    pageable
+                            );
+        }
+
+        // Category only
+        else if (hasCategory) {
+
+            medicinePage =
+                    medicineRepository
+                            .findByCategoryIgnoreCaseAndActiveTrue(
+                                    category.trim(),
+                                    pageable
+                            );
+        }
+
+        // Search only
+        else if (hasSearch) {
+
+            medicinePage =
+                    medicineRepository
+                            .searchActiveMedicines(
+                                    search.trim(),
+                                    pageable
+                            );
+        }
+
+        // All medicines
+        else {
+
+            medicinePage =
+                    medicineRepository
+                            .findByActiveTrue(pageable);
+        }
+
+        return medicinePage
+                .map(this::mapToResponse);
+    }
+
+
+    // ============================
+    // GET ALL MAIN CATEGORIES
+    // ============================
+
+    public List<String> getAllCategories() {
+
+        return medicineRepository
+                .findDistinctActiveCategories();
+    }
+
+
+    // ============================
+    // GET SUBCATEGORIES
+    // ============================
+
+    public List<String> getSubcategories(
+            String category
+    ) {
+
+        if (category == null || category.isBlank()) {
+            throw new IllegalArgumentException(
+                    "Category is required"
+            );
+        }
+
+        return medicineRepository
+                .findDistinctSubcategoriesByCategory(
+                        category.trim()
                 );
+    }
+
+
+    // ============================
+    // GET MEDICINE BY ID
+    // ============================
+
+    public MedicineResponse getMedicineById(
+            Long id
+    ) {
+
+        Medicine medicine =
+                medicineRepository.findById(id)
+                        .orElseThrow(() ->
+                                new IllegalArgumentException(
+                                        "Medicine not found"
+                                )
+                        );
 
         if (!medicine.isActive()) {
-            throw new IllegalArgumentException("Medicine is inactive");
+
+            throw new IllegalArgumentException(
+                    "Medicine is inactive"
+            );
         }
 
         return mapToResponse(medicine);
     }
 
-    public List<MedicineResponse> searchMedicines(String query) {
+
+    // ============================
+    // OLD SEARCH API
+    // ============================
+
+    public List<MedicineResponse> searchMedicines(
+            String query
+    ) {
 
         if (query == null || query.isBlank()) {
             return getAllMedicines();
@@ -68,57 +251,132 @@ public class MedicineService {
 
         List<Medicine> byName =
                 medicineRepository
-                        .findByMedicineNameContainingIgnoreCaseAndActiveTrue(query);
+                        .findByMedicineNameContainingIgnoreCaseAndActiveTrue(
+                                query
+                        );
 
         List<Medicine> byGeneric =
                 medicineRepository
-                        .findByGenericNameContainingIgnoreCaseAndActiveTrue(query);
+                        .findByGenericNameContainingIgnoreCaseAndActiveTrue(
+                                query
+                        );
 
         return java.util.stream.Stream
-                .concat(byName.stream(), byGeneric.stream())
+                .concat(
+                        byName.stream(),
+                        byGeneric.stream()
+                )
                 .distinct()
                 .map(this::mapToResponse)
                 .toList();
     }
+
+
+    // ============================
+    // UPDATE MEDICINE
+    // ============================
 
     public MedicineResponse updateMedicine(
             Long id,
             MedicineRequest request
     ) {
 
-        Medicine medicine = medicineRepository.findById(id)
-                .orElseThrow(() ->
-                        new IllegalArgumentException("Medicine not found")
-                );
+        Medicine medicine =
+                medicineRepository.findById(id)
+                        .orElseThrow(() ->
+                                new IllegalArgumentException(
+                                        "Medicine not found"
+                                )
+                        );
 
-        medicine.setMedicineName(request.getMedicineName().trim());
-        medicine.setGenericName(request.getGenericName());
-        medicine.setBrandName(request.getBrandName());
-        medicine.setManufacturer(request.getManufacturer().trim());
-        medicine.setCategory(request.getCategory().trim());
-        medicine.setStrength(request.getStrength());
-        medicine.setDosageForm(request.getDosageForm().trim());
-        medicine.setComposition(request.getComposition());
-        medicine.setDescription(request.getDescription());
-        medicine.setPrescriptionRequired(request.isPrescriptionRequired());
-        medicine.setRareMedicine(request.isRareMedicine());
-        medicine.setImageUrl(request.getImageUrl());
+        medicine.setMedicineName(
+                request.getMedicineName().trim()
+        );
 
-        return mapToResponse(medicineRepository.save(medicine));
+        medicine.setGenericName(
+                request.getGenericName()
+        );
+
+        medicine.setBrandName(
+                request.getBrandName()
+        );
+
+        medicine.setManufacturer(
+                request.getManufacturer().trim()
+        );
+
+        medicine.setCategory(
+                request.getCategory().trim()
+        );
+
+        // NEW
+        medicine.setSubcategory(
+                request.getSubcategory()
+        );
+
+        medicine.setStrength(
+                request.getStrength()
+        );
+
+        medicine.setDosageForm(
+                request.getDosageForm().trim()
+        );
+
+        medicine.setComposition(
+                request.getComposition()
+        );
+
+        medicine.setDescription(
+                request.getDescription()
+        );
+
+        medicine.setPrescriptionRequired(
+                request.isPrescriptionRequired()
+        );
+
+        medicine.setRareMedicine(
+                request.isRareMedicine()
+        );
+
+        medicine.setImageUrl(
+                request.getImageUrl()
+        );
+
+        return mapToResponse(
+                medicineRepository.save(medicine)
+        );
     }
 
-    public void deactivateMedicine(Long id) {
 
-        Medicine medicine = medicineRepository.findById(id)
-                .orElseThrow(() ->
-                        new IllegalArgumentException("Medicine not found")
-                );
+    // ============================
+    // DEACTIVATE MEDICINE
+    // ============================
+
+    public void deactivateMedicine(
+            Long id
+    ) {
+
+        Medicine medicine =
+                medicineRepository.findById(id)
+                        .orElseThrow(() ->
+                                new IllegalArgumentException(
+                                        "Medicine not found"
+                                )
+                        );
 
         medicine.setActive(false);
+
         medicineRepository.save(medicine);
     }
 
-    private MedicineResponse mapToResponse(Medicine medicine) {
+
+    // ============================
+    // ENTITY -> RESPONSE
+    // ============================
+
+    private MedicineResponse mapToResponse(
+            Medicine medicine
+    ) {
 
         return new MedicineResponse(
                 medicine.getId(),
@@ -126,7 +384,12 @@ public class MedicineService {
                 medicine.getGenericName(),
                 medicine.getBrandName(),
                 medicine.getManufacturer(),
+
                 medicine.getCategory(),
+
+                // NEW
+                medicine.getSubcategory(),
+
                 medicine.getStrength(),
                 medicine.getDosageForm(),
                 medicine.getComposition(),
