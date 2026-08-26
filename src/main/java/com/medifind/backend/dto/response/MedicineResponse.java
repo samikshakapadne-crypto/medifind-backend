@@ -14,7 +14,6 @@ public class MedicineResponse {
     private String manufacturer;
 
     private String category;
-    private String subcategory;
 
     private String strength;
     private String dosageForm;

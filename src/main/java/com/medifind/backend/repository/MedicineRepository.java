@@ -58,23 +58,6 @@ public interface MedicineRepository
     List<String> findDistinctActiveCategories();
 
 
-    // ==========================================
-    // GET SUBCATEGORIES BY MAIN CATEGORY
-    // ==========================================
-
-    @Query("""
-            SELECT DISTINCT m.subcategory
-            FROM Medicine m
-            WHERE m.active = true
-              AND LOWER(m.category) = LOWER(:category)
-              AND m.subcategory IS NOT NULL
-              AND m.subcategory <> ''
-            ORDER BY m.subcategory
-            """)
-    List<String> findDistinctSubcategoriesByCategory(
-            @Param("category") String category
-    );
-
 
     // ==========================================
     // SEARCH + PAGINATION

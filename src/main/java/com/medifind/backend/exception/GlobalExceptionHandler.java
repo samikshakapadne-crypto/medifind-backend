@@ -30,6 +30,7 @@ public class GlobalExceptionHandler {
                 .body(response);
     }
 
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<Map<String, Object>> handleValidationErrors(
             MethodArgumentNotValidException exception
@@ -59,17 +60,43 @@ public class GlobalExceptionHandler {
                 .body(response);
     }
 
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, Object>> handleGeneralException(
             Exception exception
     ) {
 
+        // TEMPORARY:
+        // Print full error in Railway Deploy Logs
+        exception.printStackTrace();
+
         Map<String, Object> response = new HashMap<>();
 
         response.put("success", false);
-        response.put("message", "Something went wrong");
-        response.put("status", HttpStatus.INTERNAL_SERVER_ERROR.value());
-        response.put("timestamp", LocalDateTime.now());
+
+        // TEMPORARY:
+        // Show actual error in Postman
+        response.put(
+                "message",
+                exception.getMessage() != null
+                        ? exception.getMessage()
+                        : exception.getClass().getSimpleName()
+        );
+
+        response.put(
+                "exception",
+                exception.getClass().getSimpleName()
+        );
+
+        response.put(
+                "status",
+                HttpStatus.INTERNAL_SERVER_ERROR.value()
+        );
+
+        response.put(
+                "timestamp",
+                LocalDateTime.now()
+        );
 
         return ResponseEntity
                 .status(HttpStatus.INTERNAL_SERVER_ERROR)

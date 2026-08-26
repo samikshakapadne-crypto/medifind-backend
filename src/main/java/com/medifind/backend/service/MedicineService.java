@@ -51,11 +51,6 @@ public class MedicineService {
                 request.getCategory().trim()
         );
 
-        // NEW
-        medicine.setSubcategory(
-                request.getSubcategory()
-        );
-
         medicine.setStrength(
                 request.getStrength()
         );
@@ -179,34 +174,13 @@ public class MedicineService {
 
 
     // ============================
-    // GET ALL MAIN CATEGORIES
+    // GET ALL CATEGORIES
     // ============================
 
     public List<String> getAllCategories() {
 
         return medicineRepository
                 .findDistinctActiveCategories();
-    }
-
-
-    // ============================
-    // GET SUBCATEGORIES
-    // ============================
-
-    public List<String> getSubcategories(
-            String category
-    ) {
-
-        if (category == null || category.isBlank()) {
-            throw new IllegalArgumentException(
-                    "Category is required"
-            );
-        }
-
-        return medicineRepository
-                .findDistinctSubcategoriesByCategory(
-                        category.trim()
-                );
     }
 
 
@@ -309,11 +283,6 @@ public class MedicineService {
                 request.getCategory().trim()
         );
 
-        // NEW
-        medicine.setSubcategory(
-                request.getSubcategory()
-        );
-
         medicine.setStrength(
                 request.getStrength()
         );
@@ -384,12 +353,7 @@ public class MedicineService {
                 medicine.getGenericName(),
                 medicine.getBrandName(),
                 medicine.getManufacturer(),
-
                 medicine.getCategory(),
-
-                // NEW
-                medicine.getSubcategory(),
-
                 medicine.getStrength(),
                 medicine.getDosageForm(),
                 medicine.getComposition(),

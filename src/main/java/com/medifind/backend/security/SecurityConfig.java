@@ -31,20 +31,27 @@ public class SecurityConfig {
     ) throws Exception {
 
         http
-                // Disable CSRF because JWT authentication is stateless
+                // ==========================================
+                // BASIC SECURITY
+                // ==========================================
+
                 .csrf(csrf -> csrf.disable())
 
-                // Enable CORS
                 .cors(cors -> {})
 
-                // No HTTP session
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(
                                 SessionCreationPolicy.STATELESS
                         )
                 )
 
+
+                // ==========================================
+                // AUTHORIZATION
+                // ==========================================
+
                 .authorizeHttpRequests(auth -> auth
+
 
                         // ==========================================
                         // CORS PREFLIGHT
@@ -74,10 +81,7 @@ public class SecurityConfig {
                         .permitAll()
 
 
-                        // IMPORTANT:
-                        // Don't leave admin registration public.
-                        // Existing ADMIN can create another admin
-                        // if you still keep this endpoint.
+                        // Only existing ADMIN can create another admin
                         .requestMatchers(
                                 HttpMethod.POST,
                                 "/api/auth/register-admin"
@@ -172,13 +176,14 @@ public class SecurityConfig {
                                 "ADMIN"
                         )
 
-                        // Only pharmacy manages stock
+                        // Only Pharmacy can add inventory
                         .requestMatchers(
                                 HttpMethod.POST,
                                 "/api/inventory"
                         )
                         .hasRole("PHARMACY")
 
+                        // Only Pharmacy can update inventory
                         .requestMatchers(
                                 HttpMethod.PUT,
                                 "/api/inventory/**"
@@ -207,13 +212,53 @@ public class SecurityConfig {
 
 
                         // ==========================================
-                        // ADMIN APIs
+                        // PRESCRIPTIONS - CUSTOMER
+                        // ==========================================
+
+                        // Customer uploads prescription
+                        .requestMatchers(
+                                HttpMethod.POST,
+                                "/api/prescriptions"
+                        )
+                        .hasRole("CUSTOMER")
+
+                        // Customer views own prescriptions
+                        .requestMatchers(
+                                HttpMethod.GET,
+                                "/api/prescriptions/my"
+                        )
+                        .hasRole("CUSTOMER")
+
+
+                        // ==========================================
+                        // PRESCRIPTIONS - PHARMACY
                         // ==========================================
 
                         // Includes:
+                        //
+                        // GET
+                        // /api/pharmacy/prescriptions/pending
+                        //
+                        // PUT
+                        // /api/pharmacy/prescriptions/{id}/approve
+                        //
+                        // PUT
+                        // /api/pharmacy/prescriptions/{id}/reject
+
+                        .requestMatchers(
+                                "/api/pharmacy/prescriptions/**"
+                        )
+                        .hasRole("PHARMACY")
+
+
+                        // ==========================================
+                        // ADMIN APIs
+                        // ==========================================
+
+                        // Examples:
+                        //
                         // /api/admin/customers
-                        // /api/admin/customers/count
-                        // /api/admin/pharmacies/...
+                        // /api/admin/pharmacies
                         // /api/admin/orders
                         // /api/admin/orders/{id}
 
@@ -221,6 +266,27 @@ public class SecurityConfig {
                                 "/api/admin/**"
                         )
                         .hasRole("ADMIN")
+
+
+                        // ==========================================
+                        // RARE MEDICINE - CUSTOMER
+                        // ==========================================
+
+                        // Customer creates rare medicine request
+                        .requestMatchers(
+                                HttpMethod.POST,
+                                "/api/rare-medicine"
+                        )
+                        .hasRole("CUSTOMER")
+
+                        // IMPORTANT:
+                        // This must come before the wider
+                        // /api/rare-medicine/* GET rule
+                        .requestMatchers(
+                                HttpMethod.GET,
+                                "/api/rare-medicine/my-requests"
+                        )
+                        .hasRole("CUSTOMER")
 
 
                         // ==========================================
@@ -245,30 +311,12 @@ public class SecurityConfig {
                         )
                         .hasRole("ADMIN")
 
-
-                        // Admin can view a particular request
+                        // Admin views one rare medicine request
                         .requestMatchers(
                                 HttpMethod.GET,
                                 "/api/rare-medicine/*"
                         )
                         .hasRole("ADMIN")
-
-
-                        // ==========================================
-                        // RARE MEDICINE - CUSTOMER
-                        // ==========================================
-
-                        .requestMatchers(
-                                HttpMethod.POST,
-                                "/api/rare-medicine"
-                        )
-                        .hasRole("CUSTOMER")
-
-                        .requestMatchers(
-                                HttpMethod.GET,
-                                "/api/rare-medicine/my-requests"
-                        )
-                        .hasRole("CUSTOMER")
 
 
                         // ==========================================
@@ -279,6 +327,11 @@ public class SecurityConfig {
                         .authenticated()
                 )
 
+
+                // ==========================================
+                // DISABLE DEFAULT LOGIN METHODS
+                // ==========================================
+
                 .formLogin(form ->
                         form.disable()
                 )
@@ -286,6 +339,11 @@ public class SecurityConfig {
                 .httpBasic(basic ->
                         basic.disable()
                 )
+
+
+                // ==========================================
+                // JWT FILTER
+                // ==========================================
 
                 .addFilterBefore(
                         jwtAuthenticationFilter,
@@ -306,8 +364,7 @@ public class SecurityConfig {
         CorsConfiguration configuration =
                 new CorsConfiguration();
 
-        // Allows your frontend developer to access
-        // the Railway backend from localhost,
+        // Allows frontend from localhost,
         // Netlify, Vercel, etc.
         configuration.setAllowedOriginPatterns(
                 List.of("*")
@@ -332,8 +389,7 @@ public class SecurityConfig {
                 List.of("Authorization")
         );
 
-        // We use JWT Authorization header,
-        // not browser session cookies
+        // JWT is sent through Authorization header.
         configuration.setAllowCredentials(false);
 
         UrlBasedCorsConfigurationSource source =
