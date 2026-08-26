@@ -14,6 +14,7 @@ public interface PharmacyRepository
             PharmacyApprovalStatus approvalStatus
     );
 
-    // Find pharmacy using the linked User ID
+    Optional<Pharmacy> findByEmail(String email);
+
     Optional<Pharmacy> findByUserId(Long userId);
 }
